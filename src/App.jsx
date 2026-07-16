@@ -76,9 +76,6 @@ const Send = (props) => (
 const LinkedIn = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
 );
-const Instagram = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-);
 
 /* ============================================================
    DATA
@@ -478,6 +475,7 @@ export default function Portfolio() {
   const [activeSection, setActiveSection] = useState("");
   const [toast, setToast] = useState({ show: false, message: "" });
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const progressBarRef = useRef(null);
   const cursorGlowRef = useRef(null);
@@ -672,10 +670,28 @@ export default function Portfolio() {
     setTimeout(() => setToast({ show: false, message: "" }), 4000);
   };
 
-  const handleSubmit = (e) => {
+  // NOTE: Replace this with your own Formspree/EmailJS endpoint (or any backend
+  // that accepts a POST). Previously this form only showed a fake "sent" toast
+  // and never actually delivered the message anywhere.
+  const CONTACT_FORM_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    showToast("Message sent successfully! I'll get back to you soon.");
-    setFormData({ name: "", email: "", message: "" });
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(CONTACT_FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      showToast("Message sent successfully! I'll get back to you soon.");
+      setFormData({ name: "", email: "", message: "" });
+    } catch (err) {
+      showToast("Couldn't send right now — please email me directly instead.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const scrollToHash = (e, href) => {
@@ -714,7 +730,7 @@ export default function Portfolio() {
         style={{ transition: "box-shadow .3s ease" }}
       >
         <div className="max-w-screen-2xl mx-auto px-6">
-          <div className="grid grid-cols-12 items-center h-16 sm:h-18">
+          <div className="grid grid-cols-12 items-center h-16 sm:h-[4.5rem]">
             <div className="col-span-4 flex items-center gap-3">
               <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center shadow-sm spin-slow" style={{ animationDuration: "18s" }}>
                 <span className="text-white font-geist font-bold text-sm" style={{ animation: "none" }}>MA</span>
@@ -1042,7 +1058,7 @@ export default function Portfolio() {
                 running <span className="text-accent">right now</span>
               </h2>
               <p className="relative mt-5 max-w-md text-sm text-text-secondary leading-relaxed">
-                Six live builds across e-commerce, healthcare and hospitality — each one designed, developed and
+                {PROJECTS.length} live builds across e-commerce, healthcare and hospitality — each one designed, developed and
                 optimized end to end. Drag the rail or use the arrows to browse.
               </p>
             </div>
@@ -1056,7 +1072,7 @@ export default function Portfolio() {
                   01
                 </span>
                 <span className="mx-1">/</span>
-                <span ref={(el) => (totalElsRef.current[0] = el)}>06</span>
+                <span ref={(el) => (totalElsRef.current[0] = el)}>{String(PROJECTS.length + 1).padStart(2, "0")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1177,7 +1193,7 @@ export default function Portfolio() {
                 01
               </span>
               <span className="mx-1">/</span>
-              <span ref={(el) => (totalElsRef.current[1] = el)}>06</span>
+              <span ref={(el) => (totalElsRef.current[1] = el)}>{String(PROJECTS.length + 1).padStart(2, "0")}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1327,10 +1343,12 @@ export default function Portfolio() {
               <form onSubmit={handleSubmit} className="bg-bg-secondary border border-border-light rounded-2xl p-8 sm:p-10 card-shadow">
                 <div className="space-y-5">
                   <div>
-                    <label className="text-[10px] font-bold tracking-widest uppercase text-text-tertiary mb-2.5 block">
+                    <label htmlFor="contact-name" className="text-[10px] font-bold tracking-widest uppercase text-text-tertiary mb-2.5 block">
                       Your Name
                     </label>
                     <input
+                      id="contact-name"
+                      name="name"
                       type="text"
                       required
                       placeholder="Your Name"
@@ -1340,10 +1358,12 @@ export default function Portfolio() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold tracking-widest uppercase text-text-tertiary mb-2.5 block">
+                    <label htmlFor="contact-email" className="text-[10px] font-bold tracking-widest uppercase text-text-tertiary mb-2.5 block">
                       Email Address
                     </label>
                     <input
+                      id="contact-email"
+                      name="email"
                       type="email"
                       required
                       placeholder="Your Email"
@@ -1353,10 +1373,12 @@ export default function Portfolio() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold tracking-widest uppercase text-text-tertiary mb-2.5 block">
+                    <label htmlFor="contact-message" className="text-[10px] font-bold tracking-widest uppercase text-text-tertiary mb-2.5 block">
                       Message
                     </label>
                     <textarea
+                      id="contact-message"
+                      name="message"
                       required
                       rows="5"
                       placeholder="Tell me about your project..."
@@ -1367,10 +1389,11 @@ export default function Portfolio() {
                   </div>
                   <button
                     type="submit"
-                    className="btn-shine group w-full bg-accent text-white text-xs font-semibold tracking-wide uppercase py-4 px-8 rounded-xl hover-bg-accent-dark transition-colors shadow-sm flex items-center justify-center gap-3"
+                    disabled={isSubmitting}
+                    className="btn-shine group w-full bg-accent text-white text-xs font-semibold tracking-wide uppercase py-4 px-8 rounded-xl hover-bg-accent-dark transition-colors shadow-sm flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{ boxShadow: "0 8px 24px rgba(108,92,231,0.2)" }}
                   >
-                    Send Message
+                    {isSubmitting ? "Sending..." : "Send Message"}
                     <Send className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                   </button>
                 </div>
